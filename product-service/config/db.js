@@ -9,9 +9,9 @@ const sequelize = new Sequelize({
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
-    console.log("[Product Service] PostgreSQL connected successfully.");
+    console.log("[Product Service] SQLite connected successfully.");
   } catch (error) {
-    console.error(`[Product Service] PostgreSQL connection error: ${error.message}`);
+    console.error(`[Product Service] SQLite connection error: ${error.message}`);
     process.exit(1);
   }
 };
