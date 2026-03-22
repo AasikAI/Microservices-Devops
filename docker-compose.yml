@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017" # Exposing for easy local access if necessary
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  auth-service:
+    build: 
+      context: ./auth-service
+    container_name: auth-service
+    environment:
+      - PORT=5001
+      - MONGO_URI=mongodb://mongodb:27017/auth_db
+      - JWT_SECRET=super_secret_jwt_key_change_in_production
+      - JWT_EXPIRES_IN=7d
+    depends_on:
+      - mongodb
+
+  product-service:
+    build: 
+      context: ./product-service
+    container_name: product-service
+    environment:
+      - PORT=5002
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=super_secret_jwt_key_change_in_production
+      # DB configuration isn't strictly needed as it uses sqlite, but defining them to override .env defaults
+      - DB_HOST=localhost 
+    depends_on:
+      - redis
+
+  order-service:
+    build: 
+      context: ./order-service
+    container_name: order-service
+    environment:
+      - PORT=5003
+      - MONGO_URI=mongodb://mongodb:27017/orders_db
+      - JWT_SECRET=super_secret_jwt_key_change_in_production
+      - PRODUCT_SERVICE_URL=http://product-service:5002
+    depends_on:
+      - mongodb
+      - product-service
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - auth-service
+      - product-service
+      - order-service
+
+volumes:
+  mongo_data:
